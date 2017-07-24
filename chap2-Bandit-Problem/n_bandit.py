@@ -48,6 +48,7 @@ def choose_bandit(step, bandit_num=10):
 
     value_records = ValueRecords(bandit_num)
     total_rewards = 0
+    average_rewards = []
     for i in range(step):
         estimated_values = estimate(value_records)
         chosen_index = choose_action(estimated_values)
@@ -64,8 +65,11 @@ def choose_bandit(step, bandit_num=10):
             print('average reward is {}'.format(total_rewards/(i+1)))
 
         value_records[chosen_index].append(reward)
+        average_rewards.append(total_rewards/(i+1))
 
         # print('average reward is {}'.format(total_rewards/(i+1)))
+
+    return average_rewards
 
 
 def asserts():
