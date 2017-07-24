@@ -1,3 +1,6 @@
 .idea/
 .idea/*
 .idea/
+.idea/ReinforcementLearning.iml .idea/markdown-navigator .idea/misc.xml .idea/modules.xml .idea/vcs.xml .idea/workspace.xml
+*/*.iml
+.idea/ReinforcementLearning.iml
