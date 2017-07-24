@@ -49,6 +49,18 @@ def epsilon_greedy_policy(epsilon):
     return choose_action
 
 
+def softmax_policy(tau):
+    def choose_action(estimated_values):
+        estimated_values = np.array(estimated_values)
+        estimated_values -= np.max(estimated_values)
+        estimated_values = estimated_values / tau
+        probability_distribution = estimated_values / np.sum(estimated_values)
+
+        return np.random.choice(range(len(estimated_values)), p=probability_distribution)
+
+    return choose_action
+
+
 def choose_bandit(step, policy_func, bandit_num=10):
     bandits = [Bandit() for _ in range(bandit_num)]
 
@@ -111,7 +123,7 @@ asserts()
 if __name__ == '__main__':
     # choose_bandit(1000)
     greedy = epsilon_greedy_policy(epsilon=0)
-    loop_time = 2000
+    loop_time = 1000
     step=1000
     greedy_average_rewards = average_loops_choose_bandit(policy_func=greedy, step=step, loop_time=loop_time)
 
@@ -125,6 +137,7 @@ if __name__ == '__main__':
     plt.plot(little_epsilon_rewards)
     plt.plot(few_epsilon_rewards)
     plt.legend(['greedy', '$\epsilon = 0.01 $', '$\epsilon = 0.1 $'])
+    plt.savefig('img/greedy-with-epsilon.png')
     plt.show()
 
 
