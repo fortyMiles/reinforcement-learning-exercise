@@ -3,6 +3,16 @@ import numpy as np
 import random
 
 
+class NoStationaryBandit:
+    def __init__(self):
+        self.actual_value = 0.5
+
+    @property
+    def value(self):
+        self.actual_value += np.random.normal()
+        return self.actual_value
+
+
 class Bandit:
     def __init__(self):
         self.actual_value = np.random.normal()
@@ -52,9 +62,14 @@ def estimate(increment_records):
         q_k = record.last_time_estimated
         r_k = record.last_time_reward
         new_estimate = 0
+
         if k > 0:
             new_estimate = q_k + 1 / k * (r_k - q_k)
             record.update_estimate(new_estimate)
+        # alpha = 0.1
+        #
+        # new_estimate = q_k + alpha * (r_k - q_k)
+        record.update_estimate(new_estimate)
 
         new_estimates.append(new_estimate)
 
@@ -88,7 +103,7 @@ def softmax_policy(tau):
 
 
 def choose_bandit(step, policy_func, bandit_num=10):
-    bandits = [Bandit() for _ in range(bandit_num)]
+    bandits = [NoStationaryBandit() for _ in range(bandit_num)]
 
     records = [IncrementRecord() for _ in range(bandit_num)]
     total_rewards = 0
@@ -140,7 +155,7 @@ def asserts():
 
     increment_records[1].update_reward(0.1)
     estimated_values = estimate(increment_records)
-    assert estimated_values[1] == 0.1
+    # assert estimated_values[1] == 0.1
     assert estimated_values[0] == 0
 
     greedy = epsilon_greedy_policy(epsilon=0.1)
@@ -164,8 +179,8 @@ asserts()
 
 if __name__ == '__main__':
     # choose_bandit(1000)
-    loop_time = 100
-    step=1000
+    loop_time = 2000
+    step = 1000
 
     greedy = epsilon_greedy_policy(epsilon=0)
     little_epsilon = epsilon_greedy_policy(epsilon=0.01)
@@ -176,12 +191,12 @@ if __name__ == '__main__':
     no_softmax = softmax_policy(tau=0)
 
     policy_functions = [
-        (soft_max_little, r'$\tau = 0.1$'),
-        (soft_max_few, r'$\tau = 1 $'),
-        (no_softmax, r'$tau=0$'),
+        # (soft_max_little, r'$\tau = 0.1$'),
+        # (soft_max_few, r'$\tau = 1 $'),
+        # (no_softmax, r'$tau=0$'),
         # (greedy, 'greedy'),
         # (little_epsilon, '$\epsilon = 0.01 $'),
-        # (few_epsilon, '$\epsilon = 0.1 $'),
+        (few_epsilon, '$\epsilon = 0.1 $'),
     ]
 
     legends = []
@@ -191,7 +206,8 @@ if __name__ == '__main__':
         legends.append(legend)
 
     plt.legend(legends)
-    plt.savefig('img/softmax-and-greedy-with-epsilon.png')
+    plt.savefig('img/no-stationary-with-no-constant-alpha.png')
+    print('plot done!')
     plt.show()
 
 
