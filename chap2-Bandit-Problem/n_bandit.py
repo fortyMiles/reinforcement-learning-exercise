@@ -1,5 +1,3 @@
-import matplotlib
-matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 import numpy as np
 import random
@@ -38,16 +36,20 @@ def estimate(records_values):
             for i in range(len(records_values))]
 
 
-def choose_action(estimated_values, epsilon=0):
-    if random.random() < epsilon:
-        max_index = np.random.choice(range(len(estimated_values)))
-    else:
-        estimated_values = np.array(estimated_values)
-        max_index = np.random.choice(np.flatnonzero(estimated_values == np.max(estimated_values)))
-    return max_index
+def epsilon_greedy_policy(epsilon):
+    def choose_action(estimated_values):
+        if random.random() < epsilon:
+            max_index = np.random.choice(range(len(estimated_values)))
+        else:
+            estimated_values = np.array(estimated_values)
+            max_index = np.random.choice(np.flatnonzero(estimated_values == np.max(estimated_values)))
+
+        return max_index
+
+    return choose_action
 
 
-def choose_bandit(step, bandit_num=10):
+def choose_bandit(step, policy_func, bandit_num=10):
     bandits = [Bandit() for _ in range(bandit_num)]
 
     value_records = ValueRecords(bandit_num)
@@ -55,7 +57,7 @@ def choose_bandit(step, bandit_num=10):
     average_rewards = []
     for i in range(step):
         estimated_values = estimate(value_records)
-        chosen_index = choose_action(estimated_values)
+        chosen_index = policy_func(estimated_values)
 
         bandit = bandits[chosen_index]
         reward = bandit.value
@@ -70,11 +72,11 @@ def choose_bandit(step, bandit_num=10):
     return average_rewards
 
 
-def average_loops_choose_bandit(step=1000, loop_time=2000):
+def average_loops_choose_bandit(policy_func, step=1000, loop_time=2000):
     results = []
     for i in range(loop_time):
         if i%100 == 0: print('{}/{}'.format((i+1), loop_time))
-        results.append(choose_bandit(step=step))
+        results.append(choose_bandit(step=step, policy_func=policy_func))
 
     return np.mean(np.array(results), axis=0)
 
@@ -93,11 +95,12 @@ def asserts():
     assert len(estimated_values) == 10
     assert estimated_values[0] == 0.1
     assert estimated_values[1] == 0
-    assert choose_action(estimated_values) == 0
+    greedy = epsilon_greedy_policy(epsilon=0.1)
+    assert greedy(estimated_values) == 0
 
     value_records[1].append(0.2)
     estimated_values = estimate(value_records)
-    assert choose_action(estimated_values) == 1
+    assert epsilon_greedy_policy(0)(estimated_values) == 1
 
     print('test done!')
 
@@ -107,6 +110,21 @@ asserts()
 
 if __name__ == '__main__':
     # choose_bandit(1000)
-    average_loops_choose_bandit(step=1000, loop_time=2000)
+    greedy = epsilon_greedy_policy(epsilon=0)
+    loop_time = 2000
+    step=1000
+    greedy_average_rewards = average_loops_choose_bandit(policy_func=greedy, step=step, loop_time=loop_time)
+
+    little_epsilon = epsilon_greedy_policy(epsilon=0.01)
+    little_epsilon_rewards = average_loops_choose_bandit(policy_func=little_epsilon, step=step, loop_time=loop_time)
+
+    few_epsilon = epsilon_greedy_policy(epsilon=0.1)
+    few_epsilon_rewards = average_loops_choose_bandit(policy_func=few_epsilon, step=step, loop_time=loop_time)
+
+    plt.plot(range(step), greedy_average_rewards)
+    plt.plot(little_epsilon_rewards)
+    plt.plot(few_epsilon_rewards)
+    plt.legend(['greedy', '$\epsilon = 0.01 $', '$\epsilon = 0.1 $'])
+    plt.show()
 
 
