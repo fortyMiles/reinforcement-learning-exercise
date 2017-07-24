@@ -2,6 +2,7 @@ import matplotlib
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 import numpy as np
+import random
 
 
 class Bandit:
@@ -37,9 +38,12 @@ def estimate(records_values):
             for i in range(len(records_values))]
 
 
-def choose_action(estimated_values):
-    estimated_values = np.array(estimated_values)
-    max_index = np.random.choice(np.flatnonzero(estimated_values == np.max(estimated_values)))
+def choose_action(estimated_values, epsilon=0):
+    if random.random() < epsilon:
+        max_index = np.random.choice(range(len(estimated_values)))
+    else:
+        estimated_values = np.array(estimated_values)
+        max_index = np.random.choice(np.flatnonzero(estimated_values == np.max(estimated_values)))
     return max_index
 
 
@@ -58,18 +62,21 @@ def choose_bandit(step, bandit_num=10):
 
         total_rewards += reward
 
-        if i % 100 == 0:
-            # print('index: {}'.format(chosen_index))
-            # print(bandits[chosen_index].actual_value)
-            # print(value_records[chosen_index])
-            print('average reward is {}'.format(total_rewards/(i+1)))
-
         value_records[chosen_index].append(reward)
         average_rewards.append(total_rewards/(i+1))
 
         # print('average reward is {}'.format(total_rewards/(i+1)))
 
     return average_rewards
+
+
+def average_loops_choose_bandit(step=1000, loop_time=2000):
+    results = []
+    for i in range(loop_time):
+        if i%100 == 0: print('{}/{}'.format((i+1), loop_time))
+        results.append(choose_bandit(step=step))
+
+    return np.mean(np.array(results), axis=0)
 
 
 def asserts():
@@ -99,6 +106,7 @@ asserts()
 
 
 if __name__ == '__main__':
-    choose_bandit(1000)
+    # choose_bandit(1000)
+    average_loops_choose_bandit(step=1000, loop_time=2000)
 
 
