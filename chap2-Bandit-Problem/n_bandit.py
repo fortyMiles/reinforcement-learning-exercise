@@ -31,9 +31,34 @@ class ValueRecords:
         return len(self.value_records)
 
 
-def estimate(records_values):
-    return [np.mean(records_values[i]) if len(records_values[i]) > 0 else 0
-            for i in range(len(records_values))]
+class IncrementRecord:
+    def __init__(self):
+        self.last_time_estimated = 0
+        self.last_time_reward = 0
+        self.chosen_time = 0
+
+    def update_estimate(self, new_estimate):
+        self.last_time_estimated = new_estimate
+
+    def update_reward(self, reward):
+        self.last_time_reward = reward
+        self.chosen_time += 1
+
+
+def estimate(increment_records):
+    new_estimates = []
+    for record in increment_records:
+        k = record.chosen_time
+        q_k = record.last_time_estimated
+        r_k = record.last_time_reward
+        new_estimate = 0
+        if k > 0:
+            new_estimate = q_k + 1 / k * (r_k - q_k)
+            record.update_estimate(new_estimate)
+
+        new_estimates.append(new_estimate)
+
+    return new_estimates
 
 
 def epsilon_greedy_policy(epsilon):
@@ -65,24 +90,26 @@ def softmax_policy(tau):
 def choose_bandit(step, policy_func, bandit_num=10):
     bandits = [Bandit() for _ in range(bandit_num)]
 
-    value_records = ValueRecords(bandit_num)
+    records = [IncrementRecord() for _ in range(bandit_num)]
     total_rewards = 0
-    average_rewards = []
+    _average_rewards = []
+
     for i in range(step):
-        estimated_values = estimate(value_records)
+        estimated_values = estimate(records)
         chosen_index = policy_func(estimated_values)
 
         bandit = bandits[chosen_index]
         reward = bandit.value
 
+        records[chosen_index].update_reward(reward)
+
         total_rewards += reward
 
-        value_records[chosen_index].append(reward)
-        average_rewards.append(total_rewards/(i+1))
+        _average_rewards.append(total_rewards/(i+1))
 
         # print('average reward is {}'.format(total_rewards/(i+1)))
 
-    return average_rewards
+    return _average_rewards
 
 
 def average_loops_choose_bandit(policy_func, step=1000, loop_time=2000):
@@ -104,16 +131,30 @@ def asserts():
     value_records[0].append(0.1)
     assert value_records[0] == [0.1], value_records[0]
 
-    estimated_values = estimate(value_records)
-    assert len(estimated_values) == 10
-    assert estimated_values[0] == 0.1
-    assert estimated_values[1] == 0
-    greedy = epsilon_greedy_policy(epsilon=0.1)
-    assert greedy(estimated_values) == 0
+    increment_records = [IncrementRecord() for _ in range(10)]
 
-    value_records[1].append(0.2)
-    estimated_values = estimate(value_records)
-    assert epsilon_greedy_policy(0)(estimated_values) == 1
+    estimated_values = estimate(increment_records)
+    assert len(estimated_values) == 10
+
+    assert estimated_values[0] == 0
+
+    increment_records[1].update_reward(0.1)
+    estimated_values = estimate(increment_records)
+    assert estimated_values[1] == 0.1
+    assert estimated_values[0] == 0
+
+    greedy = epsilon_greedy_policy(epsilon=0.1)
+
+    target_num = 0
+    for i in range(100):
+        chosen_index = greedy(estimated_values)
+        if chosen_index == 1: target_num += 1
+
+    assert abs(target_num - 100 * (1 - 0.1)) <= 5
+
+    # value_records[1].append(0.2)
+    # estimated_values = estimate(value_records)
+    # assert epsilon_greedy_policy(0)(estimated_values) == 1
 
     print('test done!')
 
