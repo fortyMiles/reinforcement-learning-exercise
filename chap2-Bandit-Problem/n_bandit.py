@@ -51,9 +51,10 @@ def epsilon_greedy_policy(epsilon):
 
 def softmax_policy(tau):
     def choose_action(estimated_values):
+        eps = 1e-5
         estimated_values = np.array(estimated_values)
         estimated_values -= np.max(estimated_values)
-        estimated_values = estimated_values / tau
+        estimated_values = np.exp(estimated_values / (tau + eps))
         probability_distribution = estimated_values / np.sum(estimated_values)
 
         return np.random.choice(range(len(estimated_values)), p=probability_distribution)
@@ -122,22 +123,34 @@ asserts()
 
 if __name__ == '__main__':
     # choose_bandit(1000)
-    greedy = epsilon_greedy_policy(epsilon=0)
-    loop_time = 1000
+    loop_time = 100
     step=1000
-    greedy_average_rewards = average_loops_choose_bandit(policy_func=greedy, step=step, loop_time=loop_time)
 
+    greedy = epsilon_greedy_policy(epsilon=0)
     little_epsilon = epsilon_greedy_policy(epsilon=0.01)
-    little_epsilon_rewards = average_loops_choose_bandit(policy_func=little_epsilon, step=step, loop_time=loop_time)
-
     few_epsilon = epsilon_greedy_policy(epsilon=0.1)
-    few_epsilon_rewards = average_loops_choose_bandit(policy_func=few_epsilon, step=step, loop_time=loop_time)
 
-    plt.plot(range(step), greedy_average_rewards)
-    plt.plot(little_epsilon_rewards)
-    plt.plot(few_epsilon_rewards)
-    plt.legend(['greedy', '$\epsilon = 0.01 $', '$\epsilon = 0.1 $'])
-    plt.savefig('img/greedy-with-epsilon.png')
+    soft_max_little = softmax_policy(tau=0.1)
+    soft_max_few = softmax_policy(tau=1)
+    no_softmax = softmax_policy(tau=0)
+
+    policy_functions = [
+        (soft_max_little, r'$\tau = 0.1$'),
+        (soft_max_few, r'$\tau = 1 $'),
+        (no_softmax, r'$tau=0$'),
+        # (greedy, 'greedy'),
+        # (little_epsilon, '$\epsilon = 0.01 $'),
+        # (few_epsilon, '$\epsilon = 0.1 $'),
+    ]
+
+    legends = []
+    for policy, legend in policy_functions:
+        average_rewards = average_loops_choose_bandit(policy_func=policy, step=step, loop_time=loop_time)
+        plt.plot(average_rewards)
+        legends.append(legend)
+
+    plt.legend(legends)
+    plt.savefig('img/softmax-and-greedy-with-epsilon.png')
     plt.show()
 
 
